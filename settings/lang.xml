@@ -1,0 +1,29 @@
+<data>
+    <lang id="en_US">
+        <section id="item.names">
+            <text id="u_settings_item">Ultrakill Settings</text>
+        </section>
+
+        <section id="item.descriptions">
+            <text id="u_settings_item">Configure settings for the "ULTRAKILL" and "ULTRAKILL movement" mods</text> 
+        </section>
+        
+        <section id="actions">
+            <text id="open_settings">Configure Settings</text>
+        </section>
+
+        <section id="settings">
+            <text id="title">Ultrakill Settings</text>
+            <text id="keybinds_title">Key Bindings</text>
+            <text id="rebind_title">Change Binding</text>
+            <text id="rebind_prompt">Please press any key...</text>
+        </section>
+
+        <!--reserved for <choice> tags-->
+        <section id="settings_menu">
+            <text id="keybinds">Configure Keybinds</text>
+            <text id="null1">Nothing else here yet :P</text>
+            <text id="close">Close</text>
+        </section>
+    </lang>
+</data>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data> 
+    <include id="movement.xml"/>
+
+    <!--give it up for the legendary... ONFRAME!!!!-->
+    <action>
+
+        function uFrameHandler(e) {
+            if (getLocalPlayer == null) return;
+            
+            var p = getLocalPlayer();
+
+            // i cant figure out where dt is, ig ill do it myself lol
+            var curr_time = getTimer();
+            uTime.dt = curr_time - uTime.lastFrame;
+            uTime.lastFrame = curr_time;
+
+            if (uTime.dt &gt; 200) return; //we just wont handle the frame after a lagspike lmao #worksmartnothard
+
+            //movement and stuff
+            if (!isPaused()){
+                movementFrame();   
+
+                //update timers
+                for (timer in uTimers.keys()) {
+                    if (timer == "frozen_timers" || Utils.contains(timer, uTimers["frozen_timers"])) continue; // dont update if frozen (and dont update "frozen_timers")
+                    uTimers.set(timer, uTimers[timer] + uTime.dt / 1000);
+                }         
+            }
+            
+        }
+
+        function uKeyDownHandler(e) {
+            if (getGlobal("keydown_mode") == "detection") {uKeyDown(e);}
+            else if (getGlobal("keydown_mode") == "rebind") {keyDownRebind(e);}
+        }
+
+        function uKeyDown(e) {
+            // dont end early if paused, allows bypassing key press checks. console is still usable like this, pause menu needs mouse ig.
+
+            var keyPressed = getKey(e.keyCode, e.keyLocation);
+            if (DEBUG) {
+                DEBUGWATCH.keycode = e.keyCode;
+                DEBUGWATCH.keylocation = e.keyLocation;
+                DEBUGWATCH.key = keyPressed;
+                
+            }
+            
+            if (keyPressed == null) return;
+
+            // special treatment
+            if (keyPressed == "jump" && !uActionMap.get("jump")) uTimers.set("jump_buffer", 0);
+            
+            uActionMap.set(keyPressed, 1);
+
+            e.stopImmediatePropagation();
+            
+        }
+
+        function uKeyUp(e) {
+            // dont end early if paused, allows bypassing key press checks. console is still usable like this, pause menu needs mouse ig.
+
+            var keyPressed = getKey(e.keyCode, e.keyLocation);
+            if (keyPressed == null) return;
+
+            uActionMap.set(keyPressed, 0);
+        }
+    </action>
+</data>

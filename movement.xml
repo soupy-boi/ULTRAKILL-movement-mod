@@ -1,0 +1,193 @@
+<data>
+    <action>
+        function getResistance() {
+            if (uTimers["walljump"] &lt; uMovement.consts.WALLJUMP_TIME) return uMovement.consts.WALLJUMP_R;
+            if (uMovement.states.grounded) return uMovement.consts.GROUND_R;
+            return uMovement.consts.AIR_R;
+        }
+
+        function movementFrame() {
+            var p = getLocalPlayer();
+            updateStates();
+            
+            //fix a bug where slam just didnt propel you downwards for some reason
+            if (uMovement.states.slamming && (uMovement.vel.y &lt; uMovement.consts.MAX_FALL_SPD * 0.75) && !uMovement.states.slamstorage){
+                uMovement.vel.y = uMovement.consts.MAX_FALL_SPD;
+            }
+
+            //apply gravity
+            if (uMovement.states.grounded) {
+                uMovement.vel.y = 0;
+                uMovement.walljump_charges = 3;
+            } else {
+                var gravity_effect = uMovement.consts.GRAVITY;
+                gravity_effect = uMovement.vel.y &lt; 0 ? gravity_effect * 0.9 : gravity_effect;
+                
+                // during slam storage
+                if (uMovement.states.slamstorage) {
+                    gravity_effect = gravity_effect * 0.8; // slow down slam storage falling
+                }
+                
+                uMovement.vel.y += gravity_effect;
+            }
+
+            var direction = uActionMap.get("right") - uActionMap.get("left");
+            if (direction != 0 && !uMovement.states.slamming && uTimers["walljump"] &gt; uMovement.consts.WALLJUMP_TIME) {
+                uMovement.vel.x += direction * uMovement.consts.SPEED;
+                uMovement.vel.x = Utils.clamp(uMovement.vel.x, -uMovement.consts.SPEED, uMovement.consts.SPEED);
+                p.renderer.set_scaleX(Math.abs(p.renderer.get_scaleX()) * -direction);
+            }
+
+            uMovement.vel.x = roundDigits(uMovement.vel.x * getResistance(), 1);
+            if (Math.abs(uMovement.vel.x) &lt; 1) uMovement.vel.x = 0;
+
+            handleSlams();
+            handleJumps();
+            uMovement.vel.y = Utils.clamp(uMovement.vel.y, -Math.pow(uMovement.consts.MAX_FALL_SPD, 2), uMovement.consts.MAX_FALL_SPD);
+
+            p.setPosition(Math.round(p.xPos + uMovement.vel.x * (uTime.dt / 1000)), Math.round(p.yTile + uMovement.vel.y * (uTime.dt / 1000)));
+            fixPos();
+        }
+
+        // fixes the x and y position to not be inside a tile after moving
+        function fixPos() {
+            var p = getLocalPlayer();
+
+            // x collision fix
+            var xfix = 0; 
+            var x_maxfix = 16;
+            
+            if (uMovement.vel.x != 0) {
+                var direction = sign(uMovement.vel.x);
+                // i have no idea why you need the 6 offset for it to properly detect.
+                var pixel_offset = 6;
+                var checkTileX = function (f) {
+                    return direction &gt; 0 ? Math.ceil((p.xPos + f - pixel_offset)/ Tile.SIZE) : Math.floor((p.xPos + f + pixel_offset) / Tile.SIZE);
+                }
+                    
+                // Check if we're colliding with a wall
+                var colliding = p.area.getTile(checkTileX(0), p.tile_y) != null;
+
+                if (DEBUG) DEBUGWATCH.colliding = colliding;
+                
+                if (colliding) {
+                    while (p.area.getTile(checkTileX(xfix), p.tile_y) != null && Math.abs(xfix) &lt;= x_maxfix) {
+                        xfix -= direction; // Push back opposite to movement direction
+                    }
+                    
+                    // apply fix and stop horizontal movement
+                    if (Math.abs(xfix) &lt;= x_maxfix) {
+                        p.setPosition(p.xPos + xfix, p.yTile);
+                        uMovement.vel.x = 0;
+                    }
+                    uMovement.states.climbing = 1;
+                } else {
+                    uMovement.states.climbing = 0;
+                }
+            }
+
+            // y collision fix
+            var yfix = -1; var y_maxfix = -3;
+            if (uMovement.states.grounded) {
+                while ((p.area.getTile(p.tile_x, Math.floor((p.yTile + yfix) / Tile.SIZE) + 1) != null) && yfix&lt;=y_maxfix) yfix -= 1;
+
+                // if youre actually trying to stand on a tile, round the position on the tile grid to look aligned
+                var standing = p.area.getTile(p.tile_x, Math.floor((p.yTile + yfix) / Tile.SIZE) + 1) != null;
+                var not_clipped = p.area.getTile(p.tile_x, Math.floor((p.yTile + yfix) / Tile.SIZE)) == null;
+                if (standing && not_clipped){
+                    p.setPosition(p.xPos, Math.round((p.yTile + yfix + 1) / 16) * 16);
+                }
+            }
+        }
+
+        function updateStates() {
+            var p = getLocalPlayer();
+            uMovement.states.grounded = (p.area.getTile(p.tile_x, Math.floor(p.yTile / Tile.SIZE) + 1) != null) ? 1 : 0;
+            if (uMovement.vel.y &gt; 0) uMovement.states.jumping = 0;
+        }
+        
+        // calculates the height of a slamBounce
+        function calculateSlamBounce() {
+            if (uTimers["slam_duration"] &lt; uMovement.consts.SLAM_BOUNCE_DEFAULT && !uMovement.states.slamstorage) {
+                uMovement.vel.y *= (uMovement.consts.SLAM_BOUNCE_CHAIN_POW + 1) + uMovement.consts.SLAM_BOUNCE_CHAIN_POW * (uTimers["slam_duration"] - 1);
+            } else if (!uMovement.states.slamstorage) {
+                uMovement.vel.y *= (uMovement.consts.SLAM_BOUNCE_CHAIN_POW + 1.2) + uMovement.consts.SLAM_BOUNCE_CHAIN_POW * (uMovement.consts.SLAM_BOUNCE_DEFAULT - 1);
+            } else {
+                trace("slmstrg");
+                uMovement.vel.y *= uMovement.consts.SLAMSTORAGE_MULT;
+            }
+            if (DEBUG) DEBUGWATCH.slambounce = uMovement.vel.y / uMovement.consts.JUMP_VEL; // hopefully there arent any other sources of y vel changes ;)
+        }
+
+        function handleJumps() {
+            var p = getLocalPlayer();
+
+            if (uMovement.states.grounded) uTimers.set("coyote_time", 0);
+
+            // jump cut-off
+            if (!uActionMap.get("jump") ) {
+                if (uMovement.states.jumping) {
+                    uMovement.vel.y = 0;
+                    uMovement.states.jumping = 0;
+                }
+                uTimers.set("jump_buffer", uMovement.consts.MAX_JUMP_BUFFER + 1);
+            }
+
+            // handle jump itself
+            var can_coyote = uTimers.get("coyote_time") &lt;= uMovement.consts.MAX_COYOTE_TIME;
+            if (uTimers.get("jump_buffer") &lt;= uMovement.consts.MAX_JUMP_BUFFER && (can_coyote || (uMovement.states.climbing && uMovement.walljump_charges &gt; 0))) {
+                uMovement.states.jumping = 1;
+                uTimers.set("jump_buffer", uMovement.consts.MAX_JUMP_BUFFER + 1);
+                uTimers.set("coyote_time", uMovement.consts.MAX_COYOTE_TIME + 1);
+                uMovement.vel.y = uMovement.consts.JUMP_VEL;
+
+                // slam jump
+                if (uTimers["slam_memory"] &lt; uMovement.consts.MAX_SLAM_MEMORY) {
+                    //uMovement.vel.y += (Utils.clamp(uTimers["slam_duration"], 0, uMovement.consts.SLAM_BOUNCE_DEFAULT)) * uMovement.vel.y;
+                    calculateSlamBounce();
+                    uTimers["slam_memory"] = uMovement.consts.MAX_SLAM_MEMORY + 1;
+                    unfreeze_timer("slam_duration");
+                }
+
+                // wall jump 
+                if (uMovement.states.climbing && !uMovement.states.grounded) {
+                    var jump_direction = uMovement.vel.x != 0 ? -sign(uMovement.vel.x) : p.renderer.get_scaleX();
+                    uMovement.vel.x = uMovement.consts.CLIMBJUMP_VEL * jump_direction * (uTime.dt / 1000);
+                    if (DEBUG) DEBUGWATCH.climbjump = uMovement.vel.x;
+                    uTimers["walljump"] = 0;
+                    uMovement.walljump_charges -= 1;
+
+                    //only slam storage when trying to move in any direction (gonna assume its towards the wall :P)
+                    if (uMovement.states.slamming && (uActionMap["left"] || uActionMap["right"])) {
+                        uMovement.states.slamstorage = 1;
+                    } else if (uMovement.states.slamming) {
+                        // avoid slam storage at all costs when not moving in a direction when walljumping, so in 1 wide tunnels you can still slam normally
+                        uMovement.states.slamming = 0;
+                    }
+                }
+            }
+        }
+
+        function handleSlams() {
+            if (uActionMap.get("slam") && !uMovement.states.grounded && !uMovement.states.slamming && uTimers["walljump"] &gt; uMovement.consts.WALLJUMP_TIME) {
+                uMovement.states.slamming = 1;
+                uMovement.vel.y = uMovement.consts.MAX_FALL_SPD;
+                uMovement.vel.x = 0;
+                uTimers.set("slam_duration", 0);
+            }
+            if (!uMovement.states.slamming && uTimers["slam_memory"] &gt; uMovement.consts.MAX_SLAM_MEMORY) {
+                unfreeze_timer("slam_duration");
+                uMovement.states.slamstorage = 0;   
+            }
+            
+            if (!uMovement.states.slamming) return;
+
+            // landing
+            if (uMovement.states.grounded) {
+                uMovement.states.slamming = 0;
+                freeze_timer("slam_duration");
+                uTimers.set("slam_memory", 0);
+            }
+        }
+    </action>
+</data>

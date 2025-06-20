@@ -1,0 +1,84 @@
+<data>
+    <tilesheet id="keys.png" width="32" height="32"/>
+    <tile id="keybutton" sheet="keys.png" x="1"/>
+    <tile id="keybutton.mod" sheet="keys.png" x="2"/>
+    <tile id="keybutton.space" sheet="keys.png" x="3"/>
+
+    <action>
+        LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
+
+        function getKeyName(keycode, keylocation) {
+            // letters
+            if (keylocation == 0 && !(keycode - 65 &gt; LETTERS.length || keycode - 64 &lt; 0)) {
+                return LETTERS[keycode - 65];
+            }
+            
+            // special keys
+            var prefix = keylocation == 1 ? "L" : "R";
+            switch (keycode) {
+                // modifier keys
+                case 16: return prefix + "Shift";
+                case 17: return prefix + "Ctrl";
+                case 18: return prefix + "Alt";
+
+                // non-alphabet keys
+                case 13: return 'Enter';
+                case 32: return 'Space';
+                case 186: return ';';
+                case 187: return '=';
+                case 188: return ',';
+                case 189: return '-';
+                case 190: return '.';
+                case 191: return '/';
+                case 192: return "`";
+                case 219: return "[";
+                case 220: return "\\";
+                case 221: return "]";
+                case 222: return "'";
+                case _: return "ERR";
+            }
+        }
+    </action>
+
+    <procedure id="closewindows">
+        <closeWindows/>
+    </procedure>
+
+    <procedure id="rebind_trigger">
+        <!--switch keydown detection mode-->
+        <action>
+            setGlobal("keydown_mode", "rebind");
+        </action>
+
+        <!--rebinding window-->
+        <set id="width" value="100"/>
+        <set id="height" value="100"/>
+        <window type="xml" name="rebind_window" width="width" height="height" closeable="false" closeButton="false">
+            <text section="settings" id="rebind_title" x="width / 2" align="center" y="5"/>
+            <text text="'rebinding the action'" x="width / 2" y="20" align="center" size="0.5"/>
+            <text text="'(' +getGlobal('rebindaction')+ '):'" x="width / 2" y="32" align="center" size="0.5"/>
+            <text section="settings" id="rebind_prompt" x="2" y="60" align="left"/>
+        </window>
+    </procedure>
+    
+    <!--actual onkeydown function during rebind--> 
+    <action>
+        function keyDownRebind(e) {
+            if (e.keyCode == 27 && e.keyLocation == 0) {
+                setGlobal("keydown_mode", "detection");
+            } else {
+                uKeyBinds.set(getGlobal("rebindaction"), [e.keyCode, e.keyLocation]);
+                uKeyBinds.set("reverse", reverseBinds(uKeyBinds));
+                setGlobal("keydown_mode", "detection");
+            }
+
+            // it sometimes causes issues when the button to rebind is clicked before the window fully opens 
+            if (getGlobal("keydown_mode") != "rebind") {
+                runProcedure("closewindows");
+                runProcedure("keybinds_menu");
+
+            }
+        }
+    </action>
+
+</data>

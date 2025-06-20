@@ -1,0 +1,66 @@
+<data>
+    <procedure id="keybinds_menu">
+        <invokeLater>
+            <set id="width" value="150"/>
+            <set id="height" value="100"/>
+            <set id="keywidth" value="32"/>
+            <set id="keyheight" value="32"/>
+            <set id="bindings_amnt" value="toArray(uKeyBinds.keys()).length"/>
+            <window type="xml" width="width" height="height" closeable="true" closeButton="true">
+                <text section="settings" id="keybinds_title" x="width / 2" y="5" align="center"/>
+
+                <!--KEYBINDS-->
+                <set id="ox" value="100"/> <!--keybind icon's x offset-->
+                <list x="1" y="20" cols="1" rows="3">
+                    <renderer width="width - 2" height="keyheight - 6">
+                        <!--i thought id have to change thiswidth and thisheight based on keyicon but it works like this so i wont touch it :P-->
+                        <set id="thiswidth" value="24"/>
+                        <set id="thisheight" value="24"/>
+                        <set id="keyicon" value="item.key.length &lt; 4 ? 'keybutton' : 'keybutton.mod'"/>
+                        <set id="keyicon" value="item.key == 'Space' ? 'keybutton.space' : keyicon"/>
+
+                        <text text="item.action + ':'" x="15" y="thisheight / 3" align="left"/> <!--action text (eg. "Jump:")-->
+                        <sprite value="Tile.makeIcon(Tile.get(keyicon))" x="(thiswidth - keywidth)/2 + 1 + ox" y="(thisheight - keyheight)/2 + 1" align="left"/>
+                        <text text="item.key" x="1 + ox" y="thisheight / 3" width="thiswidth" align="center" color="ffffff"/> <!--key itself text (eg. "Lctrl")-->
+
+                        <onSelect>
+                            <action>
+                                setGlobal("rebindaction", item.action);
+                                runProcedure("rebind_trigger");
+                            </action>
+                            <closeWindows/>
+                        </onSelect>
+                    </renderer>
+                    <init>
+                        for (k in uKeyBinds.keys()) {
+                            if (k != "reverse") addItem({action: k, key: getKeyName(uKeyBinds[k][0], uKeyBinds[k][1])});
+                        }
+                    </init>
+                </list>
+
+
+                <!--left-->
+                <!--<sprite value="Tile.get(\'keybutton\')" x="' +x+ '" y="' +y+ '" align="left"/>
+                <text text="' +k+ '" x="' x + width / 2) '" y="' +y+ '" align="center"/>-->
+            </window>
+        </invokeLater>
+    </procedure>
+
+    <!--general settings menu, with buttons to all sub-menus-->
+    <procedure id="settings_menu">
+        <menu section="settings_menu" closeable="false">
+			<choice id="keybinds"><run procedure="keybinds_menu"/></choice>
+            <choice id="null1"><run procedure="keybinds_menu"/></choice>
+            <choice id="close"/>
+        </menu>
+    </procedure>
+
+    <tilesheet id="settings_icon.png" width="16" height="10"/>
+    <tile id="settings_item.ico" sheet="settings_icon.png" x="0"/>
+    <item id="u_settings_item" icon="settings_item.ico" type="tool" weight="0">
+        <action id="use" name="open_settings" consume="false">
+            <run procedure="settings_menu"/>
+        </action>
+    </item>
+
+</data>
