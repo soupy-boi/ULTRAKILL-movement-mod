@@ -1,4 +1,5 @@
 <data>
+    <!--window for changing keybinds-->
     <procedure id="keybinds_menu">
         <invokeLater>
             <set id="width" value="150"/>
@@ -37,11 +38,6 @@
                         }
                     </init>
                 </list>
-
-
-                <!--left-->
-                <!--<sprite value="Tile.get(\'keybutton\')" x="' +x+ '" y="' +y+ '" align="left"/>
-                <text text="' +k+ '" x="' x + width / 2) '" y="' +y+ '" align="center"/>-->
             </window>
         </invokeLater>
     </procedure>
@@ -55,6 +51,7 @@
         </menu>
     </procedure>
 
+    <!--settings item-->
     <tilesheet id="settings_icon.png" width="16" height="10"/>
     <tile id="settings_item.ico" sheet="settings_icon.png" x="0"/>
     <item id="u_settings_item" icon="settings_item.ico" type="tool" weight="0">

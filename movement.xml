@@ -1,14 +1,16 @@
 <data>
     <action>
+        // gets the x resistance based off of the player's state
         function getResistance() {
             if (uTimers["walljump"] &lt; uMovement.consts.WALLJUMP_TIME) return uMovement.consts.WALLJUMP_R;
             if (uMovement.states.grounded) return uMovement.consts.GROUND_R;
             return uMovement.consts.AIR_R;
         }
 
+        // all movement related functionality that needs to be handled every frame
         function movementFrame() {
             var p = getLocalPlayer();
-            updateStates();
+            uMovement.states.grounded = (p.area.getTile(p.tile_x, Math.floor(p.yTile / Tile.SIZE) + 1) != null) ? 1 : 0;
             
             //fix a bug where slam just didnt propel you downwards for some reason
             if (uMovement.states.slamming && (uMovement.vel.y &lt; uMovement.consts.MAX_FALL_SPD * 0.75) && !uMovement.states.slamstorage){
@@ -99,12 +101,6 @@
                 }
             }
         }
-
-        function updateStates() {
-            var p = getLocalPlayer();
-            uMovement.states.grounded = (p.area.getTile(p.tile_x, Math.floor(p.yTile / Tile.SIZE) + 1) != null) ? 1 : 0;
-            if (uMovement.vel.y &gt; 0) uMovement.states.jumping = 0;
-        }
         
         // calculates the height of a slamBounce
         function calculateSlamBounce() {
@@ -119,8 +115,10 @@
             if (DEBUG) DEBUGWATCH.slambounce = uMovement.vel.y / uMovement.consts.JUMP_VEL; // hopefully there arent any other sources of y vel changes ;)
         }
 
+        // handles all jump related things, calling in movementFrame
         function handleJumps() {
             var p = getLocalPlayer();
+            if (uMovement.vel.y &gt; 0) uMovement.states.jumping = 0;
 
             if (uMovement.states.grounded) uTimers.set("coyote_time", 0);
 
@@ -168,6 +166,7 @@
             }
         }
 
+        // handles all slam related things, called in movementFrame
         function handleSlams() {
             if (uActionMap.get("slam") && !uMovement.states.grounded && !uMovement.states.slamming && uTimers["walljump"] &gt; uMovement.consts.WALLJUMP_TIME) {
                 uMovement.states.slamming = 1;

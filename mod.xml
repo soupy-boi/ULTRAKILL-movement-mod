@@ -8,7 +8,7 @@
     <loadAfter>Full Version</loadAfter>
     <init>
         <include id="utils.xml"/>
-        <include id="um_utils.xml"/>
+        <include id="setup.xml"/>
         <include id="listeners.xml"/>
 
         <include id="settings/lang.xml"/>
@@ -26,69 +26,25 @@
             DEBUGWATCH = {};
         </action>
 
-        <!--setup the global vars-->
-        <onLoad><action>
-            //init uTime values
-            uTime.lastFrame = getTimer();
-            uTime.dt = 0.1; //idk why i decided to default dt to 0.1 :shrug:
-
-            //init uMovement stuff
-            uMovement.vel = {x: 0, y: 0};
-            uMovement.walljump_charges = 3;
-            uMovement.direction = {x: 0, y: 0};
-
-            //constants
-            uMovement.consts = {};
-
-            uMovement.consts.SPEED = 200;
-            uMovement.consts.GRAVITY = 10;
-            uMovement.consts.MAX_FALL_SPD = 350; // also the slam vel
-
-            uMovement.consts.GROUND_R = 0.82; // multiplier
-            uMovement.consts.AIR_R = 0.88; // multiplier
-
-            uMovement.consts.WALLJUMP_R = 0.95; // multiplier
-            uMovement.consts.WALLJUMP_TIME = 0.2; // in seconds
-            uMovement.consts.CLIMBJUMP_VEL = 5000;
-            
-            uMovement.consts.JUMP_VEL = -220;
-            uMovement.consts.MAX_JUMP_BUFFER = 0.15; // in seconds
-            uMovement.consts.MAX_COYOTE_TIME = 0.15; // in seconds
-            
-            uMovement.consts.SLAM_BOUNCE_MAX = -650; // this is the max VEL gotten from slam-bounces
-            uMovement.consts.SLAM_BOUNCE_DEFAULT = 0.2; // IN SECONDS, NOT VEL
-            uMovement.consts.SLAM_BOUNCE_CHAIN_POW = 1.7; // calculation is kinda wonky, dont lower a lot lower than 1 or you dont gain height from chaining
-            uMovement.consts.SLAMSTORAGE_MULT = 5;
-            uMovement.consts.MAX_SLAM_MEMORY = 0.2; // in seconds
-
-            //states
-            uMovement.states = {};
-            uMovement.states.grounded = 1;
-            uMovement.states.jumping = 0;
-            uMovement.states.climbing = 0;
-            uMovement.states.slamming = 0;
-            uMovement.states.slamstorage = 0;
-
-            // start keydown mode to normal
-            setGlobal("keydown_mode", "detection");
-
-            //some timers need to start at a different value
-            uTimers['walljump'] = uMovement.consts.WALLJUMP_TIME + 1;
-
-            //init uActionMap stuff
-            for (k in uKeyBinds.keys()) {
-                if (k == "reverse") continue;
-                uActionMap.set(k, 0);
+        <!--idk where else to put these functions, and im not making a seperate file for this-->
+        <action>
+            function freeze_frame(seconds) {
+                evalXml("&lt;wait seconds='" + seconds + "' modal='false'/&gt;");
             }
 
-            //setup onFrame
-            if (getGlobal("framehandler") != null) getContainer().stage.removeEventListener("enterFrame", getGlobal("framehandler"));
-            setGlobal("framehandler", uFrameHandler);
-            getContainer().stage.addEventListener("enterFrame", uFrameHandler, false, 0);
+            function freeze_timer(timer) {
+                var frozen = uTimers["frozen_timers"];
+                if(!Utils.contains(timer, frozen)) frozen.push(timer);
+            }
 
-            // key listeners
-            setupListener("keyDown", uKeyDownHandler);
-            setupListener("keyUp", uKeyUp);
+            function unfreeze_timer(timer) {
+                uTimers.get("frozen_timers").remove(timer);
+            }
+        </action>
+
+        <!--setup the mod (moved to setup.xml)-->
+        <onLoad><action>
+            setupEverything();
         </action></onLoad>
     </init>
 </mod>

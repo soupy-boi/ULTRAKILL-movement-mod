@@ -38,10 +38,6 @@
             }
             return min; 
         }
-
-        function pointObj(x, y) {
-            return {getCenterX: function() {return x;}, getCenterY: function() {return y;}};
-        }
         
         function setupListener(listenerid, f, ?globalname, ?priority) {
             globalname = globalname == null ? "crea_" + listenerid : globalname;
@@ -63,51 +59,6 @@
             if (getGlobal(g) == null) {
                 setGlobal(g, defaultval);
             }
-        }
-
-        function nearestObjs(n, origin, objs) {
-            if (origin.yTile == null && origin.yPos == null) return;
-            var cy = origin.yTile == null ? origin.yPos : origin.yTile;
-            var dists = new StringMap();
-            for (o in objs) {
-                var o_y = o.yTile == null ? o.yPos : o.yTile;
-                dists.set(get_dist(o.xPos, o_y, origin.xPos, cy), o);
-            }
-
-            var final = [];
-            for (i in 0 ... n) {
-                var k = minArray(dists.keys());
-                //trace(k + ": " + dists.get(k));
-                final.push(dists.get(k));
-                dists.remove(k);
-            }
-            return final;
-        }
-
-        // modified version of getXDistance from the js file
-        function getYDistance(o, b, dy) {
-            if(dy == null) {
-                dy = 1;
-            }
-            var scaleY = dy;
-            if(o.renderer != null) {
-                scaleY *= o.renderer.get_scaleY();
-            }
-            var top = b.get_top();
-            var bottom = b.get_bottom();
-            var e = o._getBounds(Object.rectangle);
-            var loop = o.area.getLoop();
-            if(loop &gt; 0) {
-                loop *= Tile.SIZE;
-                if(top &gt; e.top() + loop * 0.5) {
-                    top -= loop;
-                    bottom -= loop;
-                } else if(top &lt; e.get_top() - loop * 0.5) {
-                    top += loop;
-                    bottom += loop;
-                }
-            }
-            return Math.max(0,scaleY &lt; 0 ? top - e.get_bottom() : e.get_top() - bottom);
         }
     </action>
 </data>
